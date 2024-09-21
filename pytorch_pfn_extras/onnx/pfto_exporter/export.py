@@ -693,7 +693,13 @@ class _Exporter(_ExporterOptions):
             node_inputs.extend(n.scalar_args())
             if "module" in attrs:
                 del attrs["module"]
-        if pytorch_pfn_extras.requires("1.13"):
+        if pytorch_pfn_extras.requires("2.4"):
+            g_ctx = GraphContext(
+                graph=g, block=n.owningBlock(),
+                opset=self.opset_version, original_node=n,
+                params_dict=self.vars, env=self.torch2onnx_var,
+                values_in_env=set(self.torch2onnx_var.values()))
+        elif pytorch_pfn_extras.requires("1.13"):
             g_ctx = GraphContext(
                 graph=g, block=n.owningBlock(),
                 opset=self.opset_version, original_node=n,
@@ -758,7 +764,7 @@ class _Exporter(_ExporterOptions):
         if node_kind in self.handler:
             self.handler[node_kind](self, g, n)
             return
-        
+
         if node_kind.split("::")[0] == "onnx":
             def copy_onnx_node(g: torch._C.Graph, *inputs: Any, **_attrs: Any) -> Any:
                 ret = g.op(n.kind(), *inputs, outputs=len(list(n.outputs())))
